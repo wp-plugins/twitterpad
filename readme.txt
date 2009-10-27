@@ -15,7 +15,7 @@ For example, using 'from:{yourtwittername} #tp' I can collect all of my tweets w
 
 The plugin was designed to automatically collect tweets I wanted to save for future reference (a tweet pad) and the page you collect tweets to doesn't have to be public. The plugin allows you to update any page in your blog, even if it is private.
 
-Tweets are collected once a day the newest appears to the top of the page. [Here is an example of TwitterPad in use.] (http://www.rsc-ne-scotland.org.uk/mashe/googlewavetips/).
+Tweets are collected once a day the newest appears to the top of the page. [Here is an example of TwitterPad in use](http://www.rsc-ne-scotland.org.uk/mashe/googlewavetips/).
 
 
 == Installation ==
@@ -29,5 +29,3 @@ Tweets are collected once a day the newest appears to the top of the page. [Here
 == Changelog ==
 
 **0.1** - Initial Release
-
-

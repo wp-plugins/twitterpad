@@ -3,7 +3,7 @@ Contributors: mhawksey
 Tags: twitter, rss, autoblogging, aggregation, pages, automatic, notetaking
 Requires at least: 2.5
 Tested up to: 2.8.5
-Stable tag: 0.1
+Stable tag: 1.0
 
 TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page
 

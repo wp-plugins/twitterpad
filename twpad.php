@@ -6,7 +6,7 @@ Plugin URI: http://www.rsc-ne-scotland.org.uk/mashe/twitterpad-plugin/
 Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page.  
 Author: Martin Hawksey
 Author URI: http://www.rsc-ne-scotland.org.uk/mashe
-Version: 1.0
+Version: 1.1
 */
 
 
@@ -50,6 +50,7 @@ if (!class_exists('Twitterpad')) {
             'tp_revision' => 1,
             'tp_last_refresh' => 0,
 			'tp_item_style' =>'border-bottom: 1px dashed #cccccc; padding: 10px 5px;',
+			'tp_refresh_period' =>'24',
 			'tp_feeds' => array()
         );
         
@@ -110,7 +111,8 @@ if (!class_exists('Twitterpad')) {
                 } elseif ($_POST['tp_action'] == 'stylenow') {
                 		check_admin_referer('twpad-5');
 					$this->o["tp_item_style"]=$_POST['tp_item_style'];
-					$this->status .= "Style updated.";
+					$this->o["tp_refresh_period"]=$_POST['tp_refresh_period'];
+					$this->status .= "Options updated.";
 					update_option("twitterpad-options", $this->o);
                 } elseif ($_POST['tp_action'] == 'add') {
                 		check_admin_referer('twpad-1', 'twpad-main');
@@ -207,8 +209,8 @@ if (!class_exists('Twitterpad')) {
 		if(!(empty($this->o["tp_feeds"]))) {
                 if ($this->o["tp_last_refresh"] == 0) return true;
                 $pdate = $this->o["tp_last_refresh"];
-                $timeparts = $this->convert_time($this->o["tp_refresh_time"]);
-				$next = mktime(0 + $timeparts[0], 0 + $timeparts[1], 0, date("m", $pdate), date("d", $pdate) + 1, date("Y", $pdate));
+                //$timeparts = $this->convert_time($this->o["tp_refresh_time"]);
+				$next = mktime(date("H", $pdate) + $this->o["tp_refresh_period"], date("i", $pdate), date("s", $pdate), date("m", $pdate) , date("d", $pdate), date("Y", $pdate));
                 
                 if (mktime() >= $next) return true;
                 else return false;

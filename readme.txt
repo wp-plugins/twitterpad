@@ -3,7 +3,7 @@ Contributors: mhawksey
 Tags: twitter, rss, autoblogging, aggregation, pages, automatic, notetaking
 Requires at least: 2.5
 Tested up to: 2.8.5
-Stable tag: 1.0
+Stable tag: 1.1
 
 TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page
 
@@ -15,7 +15,9 @@ For example, using 'from:{yourtwittername} #tp' I can collect all of my tweets w
 
 The plugin was designed to automatically collect tweets I wanted to save for future reference (a tweet pad) and the page you collect tweets to doesn't have to be public. The plugin allows you to update any page in your blog, even if it is private.
 
-Tweets are collected once a day the newest appears to the top of the page. [Here is an example of TwitterPad in use](http://www.rsc-ne-scotland.org.uk/mashe/googlewavetips/).
+Tweets are by default automatically collected once a day the newest appears to the top of the page. There is an option to update more often if required. [Here is an example of TwitterPad in use](http://www.rsc-ne-scotland.org.uk/mashe/googlewavetips/).
+
+Tweet feature requests with the #twpadreq
 
 
 == Installation ==
@@ -27,5 +29,6 @@ Tweets are collected once a day the newest appears to the top of the page. [Here
 1. Click 'Add Feed'
 
 == Changelog ==
+**1.1** - Option to control update frequency
 
-**0.1** - Initial Release
+**1.0** - Initial Release

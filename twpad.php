@@ -6,7 +6,7 @@ Plugin URI: http://www.rsc-ne-scotland.org.uk/mashe/twitterpad-plugin/
 Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page.  
 Author: Martin Hawksey
 Author URI: http://www.rsc-ne-scotland.org.uk/mashe
-Version: 1.1
+Version: 1.2a
 */
 
 

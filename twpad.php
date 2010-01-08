@@ -3,10 +3,10 @@
 /*
 Plugin Name: TwitterPad
 Plugin URI: http://www.rsc-ne-scotland.org.uk/mashe/twitterpad-plugin/
-Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page.  
+Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page or as a new post.  
 Author: Martin Hawksey
 Author URI: http://www.rsc-ne-scotland.org.uk/mashe
-Version: 1.2a
+Version: 1.3
 */
 
 
@@ -51,7 +51,14 @@ if (!class_exists('Twitterpad')) {
             'tp_last_refresh' => 0,
 			'tp_item_style' =>'border-bottom: 1px dashed #cccccc; padding: 10px 5px;',
 			'tp_refresh_period' =>'24',
-			'tp_feeds' => array()
+			'tp_feeds' => array(),
+			'tp_post_days' => '12345',
+			'tp_post_time' => '16:00',
+			'tp_post_title' => 'Summary of tweets for %DATE%',
+			'tp_post_content' => '<p>Below is a summary of tweets from %DATE%</p>%TWPAD%',
+			'tp_post_status' => 'publish',
+			'tp_post_category' => '',
+			'tp_post_tags' => ''
         );
         
         function Twitterpad() {
@@ -114,7 +121,21 @@ if (!class_exists('Twitterpad')) {
 					$this->o["tp_refresh_period"]=$_POST['tp_refresh_period'];
 					$this->status .= "Options updated.";
 					update_option("twitterpad-options", $this->o);
-                } elseif ($_POST['tp_action'] == 'add') {
+                } elseif ($_POST['tp_action'] == 'post_template') {
+						check_admin_referer('twpad-6');
+					$this->o["tp_post_days"] =$_POST['d1'].$_POST['d2'].$_POST['d3'].$_POST['d4'].$_POST['d5'].$_POST['d6'].$_POST['d0'];
+					$this->o["tp_post_time"]=$_POST['tp_post_time'];
+					$this->o["tp_post_title"]=$_POST['tp_post_title'];
+					$this->o["tp_post_content"]=$_POST['tp_post_content'];
+					$this->o["tp_post_status"]=$_POST['tp_post_status'];
+					$this->o["tp_post_category"]=$_POST['tp_post_category'];
+					$this->o["tp_post_tags"]=$_POST['tp_post_tags'];
+					if ($this->o["tp_post_days"] ==""){
+						$this->status .= "OOPS. You need to select at least one day for the post template";
+					}
+					$this->status .= "Post template updated.<br>";
+					update_option("twitterpad-options", $this->o);
+				} elseif ($_POST['tp_action'] == 'add') {
                 		check_admin_referer('twpad-1', 'twpad-main');
                 	if (isset($_POST['tp_url']) && $_POST['tp_page']!=""){
 						if ($this->valid_tp_feed($_POST['tp_url'])){
@@ -132,9 +153,7 @@ if (!class_exists('Twitterpad')) {
 					}
                     update_option("twitterpad-options", $this->o);
                 }
-
-                if ($this->check_refresh()) 
-                    $this->generate_post();
+                $this->generate_post();
             }
         }
 		
@@ -156,37 +175,43 @@ if (!class_exists('Twitterpad')) {
         function generate_post() {
         	 	if(empty($this->o['tp_feeds']))  return;
 			foreach ($this->o['tp_feeds'] as $key => $t) { 
+			  if ($this->o["tp_feeds"][$key]["refresh"] < mktime()){
 				$rss = new SimplePie();
 				$rss->set_feed_url($t["url"]);
 				$rss->enable_cache(false);
 				$rss->enable_order_by_date(false);
 				$rss->init();
-				
-				$page = get_post($t["page"]);
-				$content = $page->post_content;
+				if  ($t["page"] != "[New Post]") {
+					$page = get_post($t["page"]);
+					$content = $page->post_content;
+				} 
 				
 				$updated = $rss->get_channel_tags('http://www.w3.org/2005/Atom', 'updated');
-				$feedDate = strtotime(str_replace(array("T", "Z"), " ", $updated[0]["data"]));
+				$feedDate = strtotime($updated[0]["data"]);
 				if ($rss->get_item()){
-					$newestItem = strtotime(str_replace(array("T", "Z"), " ", $rss->get_item()->get_date()));
+					$newestItem = strtotime($rss->get_item()->get_date());
+				} else {
+					$newestItem = $t["lastItemDate"];
 				}
 				$new = "";
 				$rel='image';
 				foreach ($rss->get_items() as $item) {
-					$itemDate = strtotime(str_replace(array("T", "Z"), " ", $item->get_date())); 
-					//$this->status .="<br>".($itemDate-$t["lastItemDate"]);
+					$itemDate = strtotime($item->get_date()); 
 					if(($itemDate-$t["lastItemDate"]) > 0 ){
 						// new content
-						//$this->status .="<br>".date("d M y  H:i:s", $itemDate). " ".date("d M y  H:i:s", $t["lastItemDate"]);
 						$img = $item->get_links($rel);
 						$name = preg_replace('` \([^\]]*\)`', '', $item->get_author()->get_name());
-						$new .= "<div style='".$this->o["tp_item_style"]."' class='twPadItm'><div style='float:left; padding-right:5px;' class='twPadItmImg'><img src='".$img[0]."' alt='".$name." - Profile Pic' height='48px' width='48px' \></div><div class='twPadItmTxt'>@<a href='".$item->get_link(0)."'>".$name."</a>: ".$item->get_content(). " - <em>".date("d M y  H:i", $itemDate)."</em><br style='clear:both;' /></div></div>"; 
+						$imgstr = "<img src='".$img[0]."' alt='".$name." - Profile Pic' height='48px' width='48px' \>";
+						$new .= "<div style='".$this->o["tp_item_style"]."' class='twPadItm'><div style='float:left; padding-right:5px;' class='twPadItmImg'>".$imgstr."</div><div class='twPadItmTxt'>@<a href='".$item->get_link(0)."'>".$name."</a>: ".$item->get_content(). " - <em>".date("d M y  H:i", $itemDate)."</em><br style='clear:both;' /></div></div>"; 
 					}
 				}
 				if ($new !=""){
+				  $insertBegin = "<div class=\"twPad\">";
+				// Update page
+				  if  ($t["page"] != "[New Post]") { 
 					$up_post = array();
 					$up_post['ID'] = $t["page"];
-					$insertBegin = "<div class=\"twPad\">";
+					
 					if (strpos($content, $insertBegin) !== false){
 						$up_post['post_content'] = str_replace($insertBegin, $insertBegin.$new, $content);
 					} else {
@@ -194,43 +219,50 @@ if (!class_exists('Twitterpad')) {
 					}
 						
 					wp_update_post( $up_post );
+					$nextFeedDate = mktime(date("H") + $this->o["tp_refresh_period"], date("i"), date("s"), date("m") , date("d"), date("Y"));
+				  } else {
+				// New post
+					$my_post = array();
+					$dateString = date("F jS, Y");
+					$my_post['post_title'] = str_replace('%DATE%', $dateString, $this->o["tp_post_title"]);
+					$import = $insertBegin.$new."</div>";
+					$import = str_replace('%TWPAD%', $import, $this->o["tp_post_content"]);
+					$import = str_replace('%DATE%', $dateString, $import);
+					$my_post['post_content'] = $import;
+					$my_post['post_status'] = $this->o["tp_post_status"];
+					$my_post['post_author'] = 1;
+					$my_post['post_category'] = array($this->o["tp_post_category"]);
+					$my_post['tags_input'] = $this->o["tp_post_tags"];
+					
+					// Insert the post into the database
+  					wp_insert_post( $my_post );
+					$dayofWeek = date("w");
+					$i=1;
+					while (($i <= 6) && ($foundit == false)) {
+						if (($i+$dayofWeek) <=6 ){
+							$weekidx = $i+$dayofWeek;
+						} else {
+							$weekidx = $i+$dayofWeek-6;
+						}
+						if (strpos($this->o['tp_post_days'],strval($weekidx))!== false){						
+							$nextFeedDate = strtotime("next ".date("l", mktime(12, 0, 0, 1, $weekidx+4, 1970))." ".$this->o['tp_post_time']);
+							$foundit = true;
+						}
+						$i++;
+					}
+				  }
 				}
 					
 				$this->o["tp_feeds"][$key]["lastItemDate"] = $newestItem;
-				$this->o["tp_feeds"][$key]["refresh"] = $feedDate; 
+				$this->o["tp_feeds"][$key]["refresh"] = $nextFeedDate; 
 				update_option("twitterpad-options", $this->o); 
-				
+			  }
 			}
+			
 			$this->o["tp_last_refresh"] = mktime();
 			update_option("twitterpad-options", $this->o);
         }
-        
-        function check_refresh() {
-		if(!(empty($this->o["tp_feeds"]))) {
-                if ($this->o["tp_last_refresh"] == 0) return true;
-                $pdate = $this->o["tp_last_refresh"];
-                //$timeparts = $this->convert_time($this->o["tp_refresh_time"]);
-				$next = mktime(date("H", $pdate) + $this->o["tp_refresh_period"], date("i", $pdate), date("s", $pdate), date("m", $pdate) , date("d", $pdate), date("Y", $pdate));
-                
-                if (mktime() >= $next) return true;
-                else return false;
-            }
-            else return false;
-        }
-        
-        function convert_time($timer) {
-            $tp = split(" ", $timer);
-            if (count($tp) == 2) {
-                if ($tp[1] == "PM") {
-                    $tt = split(":", $tp[0]);
-                    $tt[0] = $tt[0] + 12;
-                    return $tt;
-                }
-                return split(":", $tp[0]);
-            }
-            else return split(":", $timer);
-        }
-
+ 		
         function admin_menu() {
             add_submenu_page('options-general.php','TwitterPad', 'TwitterPad', 9, __FILE__, array($this, 'options_panel'));
         }

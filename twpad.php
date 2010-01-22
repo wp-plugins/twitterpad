@@ -6,7 +6,7 @@ Plugin URI: http://www.rsc-ne-scotland.org.uk/mashe/twitterpad-plugin/
 Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page or as a new post.  
 Author: Martin Hawksey
 Author URI: http://www.rsc-ne-scotland.org.uk/mashe
-Version: 1.3
+Version: 1.3.1
 */
 
 
@@ -33,7 +33,6 @@ Version: 1.3
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
 if(! class_exists('SimplePie'))
   require_once(dirname(__FILE__).'/simplepie.php');
 
@@ -58,7 +57,8 @@ if (!class_exists('Twitterpad')) {
 			'tp_post_content' => '<p>Below is a summary of tweets from %DATE%</p>%TWPAD%',
 			'tp_post_status' => 'publish',
 			'tp_post_category' => '',
-			'tp_post_tags' => ''
+			'tp_post_tags' => '',
+			'tp_item_image' => 1
         );
         
         function Twitterpad() {
@@ -77,7 +77,7 @@ if (!class_exists('Twitterpad')) {
 
         function install_plugin() {
             $this->o = get_option('twitterpad-options');
-            
+          
             if (!is_array($this->o)) {
                 update_option('twitterpad-options', $this->default_options);
                 $this->o = get_option('twitterpad-options');
@@ -118,6 +118,7 @@ if (!class_exists('Twitterpad')) {
                 } elseif ($_POST['tp_action'] == 'stylenow') {
                 		check_admin_referer('twpad-5');
 					$this->o["tp_item_style"]=$_POST['tp_item_style'];
+					$this->o["tp_item_image"] = isset($_POST['tp_item_image']) ? 1 : 0;
 					$this->o["tp_refresh_period"]=$_POST['tp_refresh_period'];
 					$this->status .= "Options updated.";
 					update_option("twitterpad-options", $this->o);
@@ -185,9 +186,15 @@ if (!class_exists('Twitterpad')) {
 					$page = get_post($t["page"]);
 					$content = $page->post_content;
 				} 
+				/*
+				$gen = $rss->get_channel_tags(SIMPLEPIE_NAMESPACE_RSS_20, 'description');
+				if ($gen[0]['data'] == "Pipes Output"){
+					$pipes = 'true';
+				}
 				
 				$updated = $rss->get_channel_tags('http://www.w3.org/2005/Atom', 'updated');
 				$feedDate = strtotime($updated[0]["data"]);
+				*/
 				if ($rss->get_item()){
 					$newestItem = strtotime($rss->get_item()->get_date());
 				} else {
@@ -196,13 +203,25 @@ if (!class_exists('Twitterpad')) {
 				$new = "";
 				$rel='image';
 				foreach ($rss->get_items() as $item) {
+					$imgstr = "";
 					$itemDate = strtotime($item->get_date()); 
+					$img = $item->get_links($rel);
 					if(($itemDate-$t["lastItemDate"]) > 0 ){
 						// new content
-						$img = $item->get_links($rel);
-						$name = preg_replace('` \([^\]]*\)`', '', $item->get_author()->get_name());
-						$imgstr = "<img src='".$img[0]."' alt='".$name." - Profile Pic' height='48px' width='48px' \>";
-						$new .= "<div style='".$this->o["tp_item_style"]."' class='twPadItm'><div style='float:left; padding-right:5px;' class='twPadItmImg'>".$imgstr."</div><div class='twPadItmTxt'>@<a href='".$item->get_link(0)."'>".$name."</a>: ".$item->get_content(). " - <em>".date("d M y  H:i", $itemDate)."</em><br style='clear:both;' /></div></div>"; 
+						//$img = $item->get_links($rel);
+						$author = $item->get_item_tags('', 'author');
+						if (isset($author[0]['data'])){
+							$author = $author[0]['data'];
+						}else{
+							if ($author = $item->get_author()){
+								$author = $author->get_name();
+							}
+						}
+						$name = preg_replace('` \([^\]]*\)`', '', $author);
+						if (isset($img[0]) && $this->o["tp_item_image"] == 1){
+							$imgstr = "<div style='float:left; padding-right:5px;' class='twPadItmImg'><img src='".$img[0]."' alt='".$name." - Profile Pic' height='48px' width='48px' \></div>";
+						}
+						$new .= "<div style='".$this->o["tp_item_style"]."' class='twPadItm'>".$imgstr."<div class='twPadItmTxt'>@<a href='".$item->get_link(0)."'>".$name."</a>: ".$item->get_content(). " - <em>".date("d M y  H:i", $itemDate)."</em><br style='clear:both;' /></div></div>"; 
 					}
 				}
 				if ($new !=""){

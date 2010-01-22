@@ -45,7 +45,8 @@ vertical-align:top;
             <td align="left"><input type="text" name="tp_url" id="tp_url" style="width: 530px" />
               <br/>
               e.g. 'http://search.twitter.com/search.atom?q=from:mhawksey' <br>
-              <small>By defualt twitter limits search results to 20 items. If you expect more add '&amp;rpp=100' to the end of your url.</small></td>
+              <small>By default twitter limits search results to 20 items. If you expect more add '&amp;rpp=100' to the end of your url. It is also possible to use twitter feeds manipulated by other services like <a href="http://pipes.yahoo.com">Yahoo Pipes</a>. For example if you would like to post your tweets excluding @replies you can enter 
+              'http://pipes.yahoo.com/mashe/noreplies?_render=rss&amp;uname=<span style="font-style: italic">yourtwitterusername'</span> (<a href="http://pipes.yahoo.com/mashe/noreplies?_render=rss&uname=mhawksey">example</a>). Here is<a href="http://pipes.yahoo.com/mashe/noreplies"> the</a></small><a href="http://pipes.yahoo.com/mashe/noreplies"> source pipe</a>. </td>
           </tr>
           <tr>
             <th scope="row">Update Page/ New Post:</th>
@@ -121,6 +122,10 @@ if(!(empty($options['tp_feeds']))) {
               <br/>
               You can style each of the twitter items (e.g. 'border-bottom: 1px dashed #cccccc; padding: 10px 5px;') </td>
           </tr>
+		  <tr>
+		  	<th scope="row">Profile pictures:</th>
+			<td align="left"><input type="checkbox" name="tp_item_image" id="tp_item_image"<?php if ($options["tp_item_image"] == 1) echo " checked"; ?> /><label style="margin-left: 5px;" for="tp_item_images">Show profile pictures next to tweets</label></td>
+		  </tr>
           <tr>
             <th scope="row">Update frequency:</th>
             <td align="left"><select style="width: 180px;" name="tp_refresh_period" id="tp_refresh_period">

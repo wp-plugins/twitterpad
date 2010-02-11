@@ -5,7 +5,7 @@
    Description: TwitterPad allows twitter users to automatically collect tweets using custom search strings which are added to a specified page or as a new post.
    Author: Martin Hawksey
    Author URI: http://www.rsc-ne-scotland.org.uk/mashe
-   Version: 1.3.2
+   Version: 1.3.3
    */
    
   /*  Copyright 2009  Martin Hawksey  (email : martin.hawksey@gmail.com)
@@ -53,7 +53,8 @@
 			'tp_post_status' => 'publish', 
 			'tp_post_category' => '', 
 			'tp_post_tags' => '', 
-			'tp_item_image' => 1
+			'tp_item_image' => 1,
+			'tp_item_css' => 1,
 		  );
           function Twitterpad()
           {
@@ -86,7 +87,15 @@
           {
               add_action('init', array(&$this, 'init'));
               add_action('admin_menu', array(&$this, 'admin_menu'));
+			  add_action('wp_print_scripts', array(&$this, 'twpadhead'));
+
           }
+		  function twpadhead() {
+			// Only load this if not on an admin page
+			if (!is_admin() && $this->o["tp_item_css"] = 1 ) {
+				echo '<link rel="stylesheet" type="text/css" href="'.WP_PLUGIN_URL . '/twitterpad/style.php" />';
+				}
+		  }
           function init()
           {
               if ($_POST['tp_action'] == 'runow') {
@@ -177,21 +186,31 @@
                       if ($t["page"] != "[New Post]") {
                           $page = get_post($t["page"]);
                           $content = $page->post_content;
-                      }
-                      /*
-                       $gen = $rss->get_channel_tags(SIMPLEPIE_NAMESPACE_RSS_20, 'description');
-                       if ($gen[0]['data'] == "Pipes Output"){
-                       $pipes = 'true';
-                       }
-                       
-                       $updated = $rss->get_channel_tags('http://www.w3.org/2005/Atom', 'updated');
-                       $feedDate = strtotime($updated[0]["data"]);
-                       */
+						  $nextFeedDate = mktime(date("H") + $this->o["tp_refresh_period"], date("i"), date("s"), date("m"), date("d"), date("Y"));
+                      } else {
+					     $dayofWeek = date("w");
+                         $i = 1;
+						 while (($i <= 6) && ($foundit == false)) {
+							if (($i + $dayofWeek) <= 6) {
+								$weekidx = $i + $dayofWeek;
+							} else {
+								$weekidx = $i + $dayofWeek - 7;
+							}
+							if (strpos($this->o['tp_post_days'], strval($weekidx)) !== false) {
+								$nextFeedDate = strtotime("next " . date("l", mktime(12, 0, 0, 1, $weekidx + 4, 1970)) . " " . $this->o['tp_post_time']);
+								$foundit = true;
+							}
+							$i++;
+						}
+					  }
                       if ($rss->get_item()) {
                           $newestItem = strtotime($rss->get_item()->get_date());
                       } else {
                           $newestItem = $t["lastItemDate"];
                       }
+					  $this->o["tp_feeds"][$key]["refresh"] = $nextFeedDate;
+					  $this->o["tp_feeds"][$key]["lastItemDate"] = $newestItem;
+					  update_option("twitterpad-options", $this->o); 
                       $new = "";
                       $rel = 'image';
                       foreach ($rss->get_items() as $item) {
@@ -199,8 +218,6 @@
                           $itemDate = strtotime($item->get_date());
                           $img = $item->get_links($rel);
                           if (($itemDate - $t["lastItemDate"]) > 0) {
-                              // new content
-                              //$img = $item->get_links($rel);
                               $author = $item->get_item_tags('', 'author');
                               if (isset($author[0]['data'])) {
                                   $author = $author[0]['data'];
@@ -211,9 +228,10 @@
                               }
                               $name = preg_replace('` \([^\]]*\)`', '', $author);
                               if (isset($img[0]) && $this->o["tp_item_image"] == 1) {
-                                  $imgstr = "<div style='float:left; padding-right:5px;' class='twPadItmImg'><img src='" . $img[0] . "' alt='" . $name . " - Profile Pic' height='48px' width='48px' \></div>";
+                                  $imgstr = "<div class='twPadItmImg'><img src='" . $img[0] . "' alt='" . $name . " - Profile Pic' height='48px' width='48px' \></div>";
+								  $heightOverride = " style='height:60px;' ";
                               }
-                              $new .= "<div style='" . $this->o["tp_item_style"] . "' class='twPadItm'>" . $imgstr . "<div class='twPadItmTxt'>@<a href='" . $item->get_link(0) . "'>" . $name . "</a>: " . $item->get_content() . " - <em>" . date("d M y  H:i", $itemDate) . "</em><br style='clear:both;' /></div></div>";
+                              $new .= "<div ".$heightOverride." class='twPadItm'>" . $imgstr . "<div class='twPadItmTxt'>@<a href='" . $item->get_link(0) . "'>" . $name . "</a>: " . $item->get_content() . " - <em>" . date("d M y  H:i", $itemDate) . "</em><br style='clear:both;' /></div></div>";
                           }
                       }
                       if ($new != "") {
@@ -228,7 +246,7 @@
                                   $up_post['post_content'] = $content . $insertBegin . $new . "</div>";
                               }
                               wp_update_post($up_post);
-                              $nextFeedDate = mktime(date("H") + $this->o["tp_refresh_period"], date("i"), date("s"), date("m"), date("d"), date("Y"));
+                              //$nextFeedDate = mktime(date("H") + $this->o["tp_refresh_period"], date("i"), date("s"), date("m"), date("d"), date("Y"));
                           } else {
                               // New post
                               $my_post = array();
@@ -244,25 +262,8 @@
                               $my_post['tags_input'] = $this->o["tp_post_tags"];
                               // Insert the post into the database
                               wp_insert_post($my_post);
-                              $dayofWeek = date("w");
-                              $i = 1;
-                              while (($i <= 6) && ($foundit == false)) {
-                                  if (($i + $dayofWeek) <= 6) {
-                                      $weekidx = $i + $dayofWeek;
-                                  } else {
-                                      $weekidx = $i + $dayofWeek - 7;
-                                  }
-                                  if (strpos($this->o['tp_post_days'], strval($weekidx)) !== false) {
-                                      $nextFeedDate = strtotime("next " . date("l", mktime(12, 0, 0, 1, $weekidx + 4, 1970)) . " " . $this->o['tp_post_time']);
-                                      $foundit = true;
-                                  }
-                                  $i++;
-                              }
                           }
                       }
-                      $this->o["tp_feeds"][$key]["lastItemDate"] = $newestItem;
-                      $this->o["tp_feeds"][$key]["refresh"] = $nextFeedDate;
-                      update_option("twitterpad-options", $this->o);
                   }
               }
               $this->o["tp_last_refresh"] = mktime();

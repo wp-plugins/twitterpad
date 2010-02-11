@@ -115,6 +115,11 @@ if(!(empty($options['tp_feeds']))) {
       <table>
         <tbody>
           <tr>
+            <th scope="row">Item styling CSS </th>
+            <td align="left"><input type="checkbox" name="tp_item_css" id="tp_item_css"<?php if ($options["tp_item_css"] == 1) echo " checked"; ?> />
+            <label style="margin-left: 5px;" for="tp_item_images">Use item styling CSS  Enabling this allows you to control item styling using the 'Item style' below. </label></td>
+          </tr>
+          <tr>
             <th scope="row">Item styling:</th>
             <td align="left"><?php wp_nonce_field('twpad-5' ); ?>
               <input type="hidden" name="tp_action" value="stylenow" />
